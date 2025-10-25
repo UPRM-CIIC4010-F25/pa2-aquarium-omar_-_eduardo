@@ -8,6 +8,10 @@ void ofApp::setup(){
     backgroundImage.load("background.png");
     backgroundImage.resize(ofGetWindowWidth(), ofGetWindowHeight());
 
+    music.load("ZeldaWindWaker_Loop.wav");
+    music.setMultiPlay(false);
+    music.setLoop(true);
+    music.play();
 
     std::shared_ptr<Aquarium> myAquarium;
     std::shared_ptr<PlayerCreature> player;
