@@ -13,6 +13,12 @@ void Creature::normalize() {
 
 void Creature::bounce() {
     // should implement boundary controls here
+    if (m_x<=0 || m_x>=m_width){
+        m_dx=-m_dx;
+    }
+    if (m_y<=0 || m_y>=m_width){
+    m_dy=-m_dy;
+    }
 }
 
 
@@ -48,7 +54,17 @@ void GameEvent::print() const {
 
 // collision detection between two creatures
 bool checkCollision(std::shared_ptr<Creature> a, std::shared_ptr<Creature> b) {
-    return false; 
+    if (!a||!b) return false; 
+
+    float fx = a->getX() - b->getX();
+    float fy = a->getY() - b->getY();
+    float distancia = sqrt(fx*fx + fy*fy);
+
+    float radiusA = 25.0;
+    float radiusB = 25.0;
+
+    return distancia < (radiusA+radiusB);
+
 };
 
 
@@ -59,6 +75,7 @@ string GameSceneKindToString(GameSceneKind t){
         case GameSceneKind::AQUARIUM_GAME: return "AQUARIUM_GAME";
         case GameSceneKind::GAME_OVER: return "GAME_OVER";
     };
+    return "IDK";
 };
 
 std::shared_ptr<GameScene> GameSceneManager::GetScene(string name){

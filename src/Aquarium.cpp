@@ -283,6 +283,9 @@ void AquariumGameScene::Update(){
         event = DetectAquariumCollisions(this->m_aquarium, this->m_player);
         if (event != nullptr && event->isCollisionEvent()) {
             ofLogVerbose() << "Collision detected between player and NPC!" << std::endl;
+            float newDx = -m_player->getDx();
+            float newDy= -m_player->getDy();
+            m_player->setDirection(newDx,newDy);
             if(event->creatureB != nullptr){
                 event->print();
                 if(this->m_player->getPower() < event->creatureB->getValue()){
