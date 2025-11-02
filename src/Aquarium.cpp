@@ -15,7 +15,11 @@ string AquariumCreatureTypeToString(AquariumCreatureType t){
 
 // PlayerCreature Implementation
 PlayerCreature::PlayerCreature(float x, float y, int speed, std::shared_ptr<GameSprite> sprite)
-: Creature(x, y, speed, 10.0f, 1, sprite) {}
+: Creature(x, y, speed, 10.0f, 1, sprite){
+    m_powerupSprite=nullptr;
+    m_normalSprite=sprite;
+    m_type = AquariumCreatureType::Player;
+}
 
 
 void PlayerCreature::setDirection(float dx, float dy) {
@@ -39,6 +43,8 @@ void PlayerCreature::reduceDamageDebounce() {
 void PlayerCreature::update() {
     this->reduceDamageDebounce();
     this->move();
+    this->updateSizeBoost();
+    this->updateSpeedFruit();
 }
 
 
@@ -49,7 +55,7 @@ void PlayerCreature::draw() const {
         ofSetColor(ofColor::red); // Flash red if in damage debounce
     }
     if (m_sprite) {
-        m_sprite->draw(m_x, m_y);
+      m_sprite->draw(m_x, m_y);
     }
     ofSetColor(ofColor::white); // Reset color
 
@@ -70,6 +76,49 @@ void PlayerCreature::loseLife(int debounce) {
         ofLogVerbose() << "Player is in damage debounce period. Frames left: " << m_damage_debounce << std::endl;
     }
 }
+void PlayerCreature::activateSizeBoost(){
+if(!m_sizeActive){
+    m_sizeActive=true;
+    m_sizeTimer=m_sizeDuration;
+    m_power +=1;
+    if(!m_powerupSprite) {
+        m_powerupSprite = std::make_shared<GameSprite>("pez_Espada.png", 100, 100);
+        }
+        this->setSprite(m_powerupSprite);
+    m_sizeScale=1.5f;
+     setCollisionRadius(m_defaultCollisionRad * m_sizeScale);
+    ofLogNotice() << "Grow-Grow Devil Fruit Activated! Power: " << m_power;
+    }
+}
+void PlayerCreature::updateSizeBoost(){
+    if(m_sizeActive){
+        if(--m_sizeTimer<=0){
+            m_sizeActive=false;
+            m_sizeScale=1.0f;
+            m_power-=1;
+          this->setSprite(m_normalSprite);
+            ofLogNotice() << "Size Boost Ended. Power: " << m_power;
+        }
+    }
+}
+void PlayerCreature::activateSpeedFruit(){
+    if(!m_speedFruitActive){
+         m_speedFruitActive = true;
+        m_speedFruitTime = m_speedFruitDuration;
+        m_speedNormal = m_speed;
+        m_speed *= 1.5f;
+        ofLogNotice() << " Light-Speed Fruit Activated! New Speed: " << m_speed;
+    }
+}
+void PlayerCreature::updateSpeedFruit() {
+    if (m_speedFruitActive) {
+        if (--m_speedFruitTime <= 0) {
+            m_speedFruitActive = false;
+            m_speed = m_speedNormal; // Restaura velocidad
+            ofLogNotice() << "Speed Boost Ended. Speed: " << m_speed;
+        }
+    }
+}
 
 // NPCreature Implementation
 NPCreature::NPCreature(float x, float y, int speed, std::shared_ptr<GameSprite> sprite)
@@ -78,7 +127,7 @@ NPCreature::NPCreature(float x, float y, int speed, std::shared_ptr<GameSprite> 
     m_dy = (rand() % 3 - 1); // -1, 0, or 1
     normalize();
 
-    m_creatureType = AquariumCreatureType::NPCreature;
+    m_type = AquariumCreatureType::NPCreature;
 }
 
 void NPCreature::move() {
@@ -110,7 +159,7 @@ BiggerFish::BiggerFish(float x, float y, int speed, std::shared_ptr<GameSprite> 
 
     setCollisionRadius(60); // Bigger fish have a larger collision radius
     m_value = 5; // Bigger fish have a higher value
-    m_creatureType = AquariumCreatureType::BiggerFish;
+    m_type = AquariumCreatureType::BiggerFish;
 }
 
 void BiggerFish::move() {
@@ -130,12 +179,43 @@ void BiggerFish::draw() const {
     ofLogVerbose() << "BiggerFish at (" << m_x << ", " << m_y << ") with speed " << m_speed << std::endl;
     this->m_sprite->draw(this->m_x, this->m_y);
 }
+GyaradosFish::GyaradosFish(float x, float y, int speed, std::shared_ptr<GameSprite> sprite)
+: NPCreature(x, y, speed, sprite) {
+    m_value = 10;
+    m_type = AquariumCreatureType::GyaradosFish;
+}
+
+void GyaradosFish::move(std::shared_ptr<PlayerCreature> player) {
+    float dx = player->getX() - m_x;
+    float dy = player->getY() - m_y;
+    float length = sqrt(dx*dx + dy*dy);
+
+    
+    if (length > 0) { 
+         if (dx < 0) {
+           this-> m_sprite->setFlipped(true);
+        } else {
+            this->m_sprite->setFlipped(false);
+        }
+        m_x += (dx/length) * (m_speed * 1.2f);
+        m_y += (dy/length) * (m_speed * 1.2f);
+    }
+    bounce();
+}
+
+void GyaradosFish::draw() const {
+    m_sprite->draw(m_x, m_y);
+}
 
 
 // AquariumSpriteManager
 AquariumSpriteManager::AquariumSpriteManager(){
     this->m_npc_fish = std::make_shared<GameSprite>("base-fish.png", 70,70);
     this->m_big_fish = std::make_shared<GameSprite>("bigger-fish.png", 120, 120);
+    this->m_powerup= std::make_shared<GameSprite>("devil_Fruit.png", 40, 40);
+    this->m_speed_fruit= std::make_shared<GameSprite>("kizaru_Fruit.png",40,40);
+    this->m_gyarados_fish=std::make_shared<GameSprite>("gyarados.png", 140, 140);
+    this->m_angler_fish = std::make_shared<GameSprite>("angler_Fish.png", 90, 90);
 }
 
 std::shared_ptr<GameSprite> AquariumSpriteManager::GetSprite(AquariumCreatureType t){
@@ -145,6 +225,14 @@ std::shared_ptr<GameSprite> AquariumSpriteManager::GetSprite(AquariumCreatureTyp
             
         case AquariumCreatureType::NPCreature:
             return std::make_shared<GameSprite>(*this->m_npc_fish);
+        case AquariumCreatureType::PowerUp:
+            return std::make_shared<GameSprite>(*this->m_powerup);
+        case AquariumCreatureType::SpeedFruit:
+            return std::make_shared<GameSprite>(*this->m_speed_fruit);
+        case AquariumCreatureType::GyaradosFish:
+            return std::make_shared<GameSprite>(*this->m_gyarados_fish);
+        case AquariumCreatureType::AnglerFish:
+            return std::make_shared<GameSprite>(*this->m_angler_fish);
         default:
             return nullptr;
     }
@@ -169,9 +257,13 @@ void Aquarium::addAquariumLevel(std::shared_ptr<AquariumLevel> level){
     this->m_aquariumlevels.push_back(level);
 }
 
-void Aquarium::update() {
+void Aquarium::update(std::shared_ptr<PlayerCreature> player) {
     for (auto& creature : m_creatures) {
+        if (creature->getType() == AquariumCreatureType::GyaradosFish || creature->getType() == AquariumCreatureType::AnglerFish){
+        creature->move(player);
+    }else{
         creature->move();
+        }
     }
     this->Repopulate();
 }
@@ -186,10 +278,12 @@ void Aquarium::draw() const {
 void Aquarium::removeCreature(std::shared_ptr<Creature> creature) {
     auto it = std::find(m_creatures.begin(), m_creatures.end(), creature);
     if (it != m_creatures.end()) {
+        if(creature->getType()==AquariumCreatureType::NPCreature ||
+            creature->getType() == AquariumCreatureType::BiggerFish){
         ofLogVerbose() << "removing creature " << endl;
         int selectLvl = this->currentLevel % this->m_aquariumlevels.size();
-        auto npcCreature = std::static_pointer_cast<NPCreature>(creature);
-        this->m_aquariumlevels.at(selectLvl)->ConsumePopulation(npcCreature->GetType(), npcCreature->getValue());
+        this->m_aquariumlevels.at(selectLvl)->ConsumePopulation(creature->getType(), creature->getValue());
+            }
         m_creatures.erase(it);
     }
 }
@@ -219,6 +313,18 @@ void Aquarium::SpawnCreature(AquariumCreatureType type) {
         case AquariumCreatureType::BiggerFish:
             this->addCreature(std::make_shared<BiggerFish>(x, y, speed, this->m_sprite_manager->GetSprite(AquariumCreatureType::BiggerFish)));
             break;
+        case AquariumCreatureType::PowerUp:
+            this->addCreature(std::make_shared<PowerUp>(x, y, this->m_sprite_manager->GetSprite(AquariumCreatureType::PowerUp)));
+            break;
+        case AquariumCreatureType::SpeedFruit:
+            this->addCreature(std::make_shared<SpeedFruit>(x, y, this->m_sprite_manager->GetSprite(AquariumCreatureType::SpeedFruit)));
+            break;
+        case AquariumCreatureType::GyaradosFish:
+            this->addCreature(std::make_shared<GyaradosFish>(x, y, speed, this->m_sprite_manager->GetSprite(type)));
+            break;
+        case AquariumCreatureType::AnglerFish:
+            this->addCreature(std::make_shared<AnglerFish>(x, y, speed, this->m_sprite_manager->GetSprite(AquariumCreatureType::AnglerFish)));
+             break;
         default:
             ofLogError() << "Unknown creature type to spawn!";
             break;
@@ -282,6 +388,16 @@ void AquariumGameScene::Update(){
     if (this->updateControl.tick()) {
         event = DetectAquariumCollisions(this->m_aquarium, this->m_player);
         if (event != nullptr && event->isCollisionEvent()) {
+            if (event->creatureB->getType() == AquariumCreatureType::PowerUp) {
+            m_player->activateSizeBoost();
+            m_aquarium->removeCreature(event->creatureB);
+             return;
+            }
+        if (event->creatureB->getType() == AquariumCreatureType::SpeedFruit) {
+            m_player->activateSpeedFruit();
+            m_aquarium->removeCreature(event->creatureB);
+             return;
+                }
             ofLogVerbose() << "Collision detected between player and NPC!" << std::endl;
             float newDx = -m_player->getDx();
             float newDy= -m_player->getDy();
@@ -299,9 +415,18 @@ void AquariumGameScene::Update(){
                 else{
                     this->m_aquarium->removeCreature(event->creatureB);
                     this->m_player->addToScore(1, event->creatureB->getValue());
-                    if (this->m_player->getScore() % 25 == 0){
-                        this->m_player->increasePower(1);
-                        ofLogNotice() << "Player power increased to " << this->m_player->getPower() << "!" << std::endl;
+                    if (this->m_player->getScore() % 20 == 0) {
+                        this->m_aquarium->SpawnCreature(AquariumCreatureType::PowerUp);
+                            ofLogNotice() << "A Grow-Grow Devil Fruit appear! ";
+                            }
+                    if (this->m_player->getScore() % 15 == 0) {
+                         this->m_aquarium->SpawnCreature(AquariumCreatureType::SpeedFruit);
+                            ofLogNotice() << "A Light-Speed Devil Fruit appeared!";
+    }
+                        if (this->m_player->getScore() % 30 == 0 && this->m_player->getScore() > 0) {
+                            this->m_player->increasePower(1);
+           
+                    ofLogNotice() << "Player grew stronger! New Power: " << this->m_player->getPower() << endl;
                     }
                     
                 }
@@ -312,7 +437,7 @@ void AquariumGameScene::Update(){
                 ofLogError() << "Error: creatureB is null in collision event." << std::endl;
             }
         }
-        this->m_aquarium->update();
+        this->m_aquarium->update(this->m_player);
     }
 
 }

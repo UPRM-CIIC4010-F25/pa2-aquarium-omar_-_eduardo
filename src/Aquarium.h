@@ -8,8 +8,13 @@
 
 
 enum class AquariumCreatureType {
+    Player,
     NPCreature,
-    BiggerFish
+    BiggerFish,
+    PowerUp,
+    SpeedFruit,
+    GyaradosFish,
+    AnglerFish
 };
 
 string AquariumCreatureTypeToString(AquariumCreatureType t);
@@ -67,14 +72,28 @@ public:
     void loseLife(int debounce);
     void increasePower(int value) { m_power += value; }
     void reduceDamageDebounce();
+    void activateSizeBoost();
+    void updateSizeBoost();
+    void activateSpeedFruit();
+    void updateSpeedFruit();
     
 private:
     int m_score = 0;
     int m_lives = 3;
     int m_power = 1; // mark current power lvl
     int m_damage_debounce = 0; // frames to wait after eating
+    bool m_sizeActive=false;
+    float m_sizeScale=1.0;
+    int m_sizeTimer=0;
+    const int m_sizeDuration= 15*60;
+    float m_defaultCollisionRad=25.0;
+    std::shared_ptr<GameSprite> m_powerupSprite;
+    std::shared_ptr<GameSprite> m_normalSprite;
+    bool m_speedFruitActive=false;
+    int m_speedFruitTime=0;
+    const int m_speedFruitDuration=7*60;
+    int m_speedNormal=0;
 };
-
 class NPCreature : public Creature {
 public:
     NPCreature(float x, float y, int speed, std::shared_ptr<GameSprite> sprite);
@@ -92,7 +111,65 @@ public:
     void move() override;
     void draw() const override;
 };
+class GyaradosFish : public NPCreature {
+    public:
+    GyaradosFish(float x, float y, int speed, std::shared_ptr<GameSprite> sprite);
+    void move(std::shared_ptr<PlayerCreature> player) override;
+    void draw() const override;
+};
+class PowerUp : public Creature{
+public:
+    PowerUp(float x, float y, std::shared_ptr<GameSprite> sprite)
+        : Creature(x, y, 0, 20.0f, 0, sprite)
+    {
+        m_type = AquariumCreatureType::PowerUp;
+    }
 
+    void move() override {};
+    void draw() const override {m_sprite->draw(m_x, m_y);}
+};
+class SpeedFruit : public Creature{
+public:
+    SpeedFruit(float x, float y, std::shared_ptr<GameSprite> sprite)
+        : Creature(x, y, 0, 20.0f, 0, sprite){
+        m_type= AquariumCreatureType::SpeedFruit;
+    }
+    void move() override {}
+    void draw() const override {m_sprite->draw(m_x, m_y);}
+};
+class AnglerFish : public NPCreature{
+    public:
+    AnglerFish(float x, float y, int speed, std::shared_ptr<GameSprite> sprite)
+        : NPCreature(x, y, speed, sprite) {
+        m_value = 4;
+        m_type = AquariumCreatureType::AnglerFish;
+    }
+
+  void move(std::shared_ptr<PlayerCreature> player) {
+        float dx = player->getX() - m_x;
+        float dy = player->getY() - m_y;
+        float distancia = sqrt(dx*dx + dy*dy);
+
+        if (distancia < 150) {  
+            m_dx = -dx/distancia;
+            m_dy = -dy/distancia;
+            m_x += m_dx* (m_speed*1.6f);
+            m_y += m_dy* (m_speed*1.6f);
+        } else {
+        m_x += m_dx * m_speed;
+        m_y += m_dy * m_speed;
+        }
+         if (m_dx < 0) {
+            this->m_sprite->setFlipped(true);
+        } else {
+            this->m_sprite->setFlipped(false);
+        }
+        bounce();
+    }
+    void draw() const override {
+        m_sprite->draw(m_x, m_y);
+    }
+};
 
 class AquariumSpriteManager {
     public:
@@ -102,6 +179,10 @@ class AquariumSpriteManager {
     private:
         std::shared_ptr<GameSprite> m_npc_fish;
         std::shared_ptr<GameSprite> m_big_fish;
+        std::shared_ptr<GameSprite> m_powerup;
+        std::shared_ptr<GameSprite> m_speed_fruit;
+        std::shared_ptr<GameSprite> m_gyarados_fish;
+        std::shared_ptr<GameSprite> m_angler_fish;
 };
 
 
@@ -112,7 +193,7 @@ public:
     void addAquariumLevel(std::shared_ptr<AquariumLevel> level);
     void removeCreature(std::shared_ptr<Creature> creature);
     void clearCreatures();
-    void update();
+    void update(std::shared_ptr<PlayerCreature> player);
     void draw() const;
     void setBounds(int w, int h) { m_width = w; m_height = h; }
     void setMaxPopulation(int n) { m_maxPopulation = n; }
@@ -185,6 +266,8 @@ class Level_2 : public AquariumLevel  {
         Level_2(int levelNumber, int targetScore): AquariumLevel(levelNumber, targetScore){
             this->m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::NPCreature, 30));
             this->m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::BiggerFish, 5));
+            this->m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::GyaradosFish, 1));
+            this->m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::AnglerFish, 3));
 
         };
         std::vector<AquariumCreatureType> Repopulate() override;

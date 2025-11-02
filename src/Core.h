@@ -50,7 +50,8 @@ private:
 };
 
 
-
+enum class AquariumCreatureType:int;
+class PlayerCreature;
 class Creature {
 protected:
     Creature(float x, float y, int speed, float collisionRadius, int value,
@@ -76,12 +77,16 @@ protected:
     float m_collisionRadius = 0.0f;
     int m_value = 0;
     std::shared_ptr<GameSprite> m_sprite;
-
+     AquariumCreatureType m_type;
 public:
     virtual ~Creature() = default;
     virtual void move() = 0;
+    virtual void move(std::shared_ptr<PlayerCreature> player) {
+    move();
+}
     virtual void draw() const = 0;
 
+    virtual bool isExpired() const {return false;}
     virtual float getCollisionRadius() const { return m_collisionRadius; }
     virtual void setCollisionRadius(float radius) { m_collisionRadius = radius; }
 
@@ -100,6 +105,7 @@ public:
     void setBounds(int w, int h);
     void normalize();
     void bounce();
+    AquariumCreatureType getType() const {return m_type;}
 };
 
 // GameEvents

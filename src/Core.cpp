@@ -13,12 +13,22 @@ void Creature::normalize() {
 
 void Creature::bounce() {
     // should implement boundary controls here
-    if (m_x<=0 || m_x>=m_width){
-        m_dx=-m_dx;
+    //Pared izq.
+   if (m_x < m_collisionRadius) {
+        m_x = m_collisionRadius;
+        m_dx = -m_dx;
+    } else if (m_x > m_width - m_collisionRadius) {  //pared der.
+        m_x = m_width - m_collisionRadius;
+        m_dx = -m_dx;
     }
-    if (m_y<=0 || m_y>=m_width){
-    m_dy=-m_dy;
-    }
+
+    if (m_y < m_collisionRadius) { //borde abajo
+        m_y = m_collisionRadius;
+        m_dy = -m_dy;
+    } else if (m_y > m_height - m_collisionRadius) {
+        m_y = m_height - m_collisionRadius;
+        m_dy = -m_dy;
+    } 
 }
 
 
@@ -60,8 +70,8 @@ bool checkCollision(std::shared_ptr<Creature> a, std::shared_ptr<Creature> b) {
     float fy = a->getY() - b->getY();
     float distancia = sqrt(fx*fx + fy*fy);
 
-    float radiusA = 25.0;
-    float radiusB = 25.0;
+    float radiusA = a->getCollisionRadius();
+    float radiusB = b->getCollisionRadius();
 
     return distancia < (radiusA+radiusB);
 
