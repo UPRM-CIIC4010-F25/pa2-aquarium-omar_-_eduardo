@@ -41,10 +41,23 @@ class AquariumLevel : public GameLevel {
         void populationReset();
         void levelReset(){m_level_score=0;this->populationReset();}
         virtual std::vector<AquariumCreatureType> Repopulate() = 0;
+        virtual void initialize();
+        virtual void update(float deltaTime, std::shared_ptr<PlayerCreature> player);
+        virtual void spawnWave();
+        int getCurrentWave() const { return m_currentWave; }
+        int getMaxWaves() const { return m_maxWaves; }
+        virtual std::string getLevelDescription() const = 0;
     protected:
         std::vector<std::shared_ptr<AquariumLevelPopulationNode>> m_levelPopulation;
         int m_level_score;
         int m_targetScore;
+        int m_currentWave;
+        int m_maxWaves;
+        float m_timeBetweenWaves;
+        float m_waveTimer;
+        bool m_levelCompleted;
+        virtual void setupWavePattern() = 0;
+        virtual std::vector<AquariumCreatureType> getWaveCreatures(int waveNumber) = 0;
 
 };
 

@@ -337,28 +337,41 @@ void Aquarium::SpawnCreature(AquariumCreatureType type) {
 // it will compose into aquarium so eating eats frm the pool of NPCs in the lvl class
 // once lvl criteria met, we move to new lvl through inner signal asking for new lvl
 // which will mean incrementing the buffer and pointing to a new lvl index
+// En Aquarium.cpp - ACTUALIZA el método Repopulate:
+
 void Aquarium::Repopulate() {
     ofLogVerbose("entering phase repopulation");
-    // lets make the levels circular
+    
     int selectedLevelIdx = this->currentLevel % this->m_aquariumlevels.size();
     ofLogVerbose() << "the current index: " << selectedLevelIdx << endl;
     std::shared_ptr<AquariumLevel> level = this->m_aquariumlevels.at(selectedLevelIdx);
 
+    
+    level->update(1.0f/60.0f, this->m_player); 
+
+    
+    if(level->getCurrentWave() < level->getMaxWaves() && 
+       level->m_waveTimer >= level->m_timeBetweenWaves) {
+        level->spawnWave(shared_from_this()); 
+    }
 
     if(level->isCompleted()){
+        ofLogNotice() << "Level " << selectedLevelIdx << " completed! Moving to next level.";
         level->levelReset();
         this->currentLevel += 1;
         selectedLevelIdx = this->currentLevel % this->m_aquariumlevels.size();
-        ofLogNotice()<<"new level reached : " << selectedLevelIdx << std::endl;
         level = this->m_aquariumlevels.at(selectedLevelIdx);
+        level->initialize(); 
         this->clearCreatures();
+        
+        
+        ofLogNotice() << level->getLevelDescription();
     }
 
     
-    // now lets find how many to respawn if needed 
     std::vector<AquariumCreatureType> toRespawn = level->Repopulate();
     ofLogVerbose() << "amount to repopulate : " << toRespawn.size() << endl;
-    if(toRespawn.size() <= 0 ){return;} // there is nothing for me to do here
+    
     for(AquariumCreatureType newCreatureType : toRespawn){
         this->SpawnCreature(newCreatureType);
     }
@@ -450,16 +463,71 @@ void AquariumGameScene::Draw() {
 }
 
 
+
+
 void AquariumGameScene::paintAquariumHUD(){
     float panelWidth = ofGetWindowWidth() - 150;
     ofDrawBitmapString("Score: " + std::to_string(this->m_player->getScore()), panelWidth, 20);
     ofDrawBitmapString("Power: " + std::to_string(this->m_player->getPower()), panelWidth, 30);
     ofDrawBitmapString("Lives: " + std::to_string(this->m_player->getLives()), panelWidth, 40);
+    
+    
+    if(!this->m_aquarium->m_aquariumlevels.empty()) {
+        int currentLevelIdx = this->m_aquarium->currentLevel % this->m_aquarium->m_aquariumlevels.size();
+        auto currentLevel = this->m_aquarium->m_aquariumlevels.at(currentLevelIdx);
+        
+        ofDrawBitmapString("Level: " + std::to_string(this->m_aquarium->currentLevel + 1), panelWidth, 60);
+        ofDrawBitmapString("Wave: " + std::to_string(currentLevel->getCurrentWave() + 1) + 
+                          "/" + std::to_string(currentLevel->getMaxWaves()), panelWidth, 70);
+        ofDrawBitmapString("Level Score: " + std::to_string(currentLevel->m_level_score) + 
+                          "/" + std::to_string(currentLevel->m_targetScore), panelWidth, 80);
+        
+        
+        ofDrawBitmapString(currentLevel->getLevelDescription(), 20, ofGetWindowHeight() - 20);
+    }
+    
     for (int i = 0; i < this->m_player->getLives(); ++i) {
         ofSetColor(ofColor::red);
         ofDrawCircle(panelWidth + i * 20, 50, 5);
     }
-    ofSetColor(ofColor::white); // Reset color to white for other drawings
+    ofSetColor(ofColor::white);
+}
+
+void AquariumLevel::initialize() {
+    m_level_score = 0;
+    m_currentWave = 0;
+    m_waveTimer = 0.0f;
+    m_levelCompleted = false;
+    populationReset();
+    setupWavePattern();
+}
+void AquariumLevel::update(float deltaTime, std::shared_ptr<PlayerCreature> player) {
+   
+    if (m_levelCompleted) return;
+
+    
+    m_waveTimer += deltaTime;
+
+    
+    if (m_currentWave < m_maxWaves && m_waveTimer >= m_timeBetweenWaves) {
+        
+        m_waveTimer = 0.0f;
+        m_currentWave++;
+    }
+
+    
+    if (m_level_score >= m_targetScore) {
+        m_levelCompleted = true;
+    }
+}
+
+void AquariumLevel::spawnWave(std::shared_ptr<Aquarium> aquarium) {
+    if (!aquarium) return;
+    
+    std::vector<AquariumCreatureType> waveCreatures = getWaveCreatures(m_currentWave);
+    for (auto creatureType : waveCreatures) {
+        aquarium->SpawnCreature(creatureType);
+    }
 }
 
 void AquariumLevel::populationReset(){
@@ -473,64 +541,230 @@ void AquariumLevel::ConsumePopulation(AquariumCreatureType creatureType, int pow
         ofLogVerbose() << "consuming from this level creatures" << endl;
         if(node->creatureType == creatureType){
             ofLogVerbose() << "-cosuming from type: " << AquariumCreatureTypeToString(node->creatureType) <<" , currPop: " << node->currentPopulation << endl;
-            if(node->currentPopulation == 0){
-                return;
-            } 
-            node->currentPopulation -= 1;
+            if(node->currentPopulation > 0){
+                node->currentPopulation -= 1;
+                m_level_score += power;
+                
+
+             
+            
             ofLogVerbose() << "+cosuming from type: " << AquariumCreatureTypeToString(node->creatureType) <<" , currPop: " << node->currentPopulation << endl;
-            this->m_level_score += power;
+            if(m_level_score >= m_targetScore) {
+                    m_levelCompleted = true;
+                }
+            }
             return;
         }
     }
-}
+}   
+
 
 bool AquariumLevel::isCompleted(){
-    return this->m_level_score >= this->m_targetScore;
+    return m_levelCompleted || m_level_score >= m_targetScore;
 }
+
 
 
 
 
 std::vector<AquariumCreatureType> Level_0::Repopulate() {
     std::vector<AquariumCreatureType> toRepopulate;
-    for(std::shared_ptr<AquariumLevelPopulationNode> node : this->m_levelPopulation){
-        int delta = node->population - node->currentPopulation;
-        ofLogVerbose() << "to Repopulate :  " << delta << endl;
-        if(delta >0){
-            for(int i = 0; i<delta; i++){
-                toRepopulate.push_back(node->creatureType);
+    if (m_currentWave >= m_maxWaves) {
+        for(std::shared_ptr<AquariumLevelPopulationNode> node : m_levelPopulation){
+            int delta = node->population - node->currentPopulation;
+            if(delta > 0){
+                for(int i = 0; i < delta; i++){
+                    toRepopulate.push_back(node->creatureType);
+                }
+                node->currentPopulation += delta;
             }
-            node->currentPopulation += delta;
         }
     }
+    
     return toRepopulate;
-
 }
+
+void Level_0::setupWavePattern() {
+    m_maxWaves = 3;
+    m_timeBetweenWaves = 12.0f;
+}
+
+std::vector<AquariumCreatureType> Level_0::getWaveCreatures(int waveNumber) {
+    std::vector<AquariumCreatureType> waveCreatures;
+    
+    switch(waveNumber) {
+        case 0: 
+            for(int i = 0; i < 4; i++) {
+                waveCreatures.push_back(AquariumCreatureType::NPCreature);
+            }
+            break;
+        case 1: 
+            for(int i = 0; i < 6; i++) {
+                waveCreatures.push_back(AquariumCreatureType::NPCreature);
+            }
+            break;
+        case 2: 
+            for(int i = 0; i < 4; i++) {
+                waveCreatures.push_back(AquariumCreatureType::NPCreature);
+            }
+            waveCreatures.push_back(AquariumCreatureType::BiggerFish);
+            break;
+    }
+    
+    return waveCreatures;
+}
+
+std::string Level_0::getLevelDescription() const {
+    return "Nivel 1: Ecosistema Basico - Peces Dorados Pacificos";
+}
+
+
 
 std::vector<AquariumCreatureType> Level_1::Repopulate() {
     std::vector<AquariumCreatureType> toRepopulate;
-    for(std::shared_ptr<AquariumLevelPopulationNode> node : this->m_levelPopulation){
-        int delta = node->population - node->currentPopulation;
-        if(delta >0){
-            for(int i=0; i<delta; i++){
-                toRepopulate.push_back(node->creatureType);
+    
+    if (m_currentWave >= m_maxWaves) {
+        for(std::shared_ptr<AquariumLevelPopulationNode> node : m_levelPopulation){
+            int delta = node->population - node->currentPopulation;
+            if(delta > 0){
+                for(int i = 0; i < delta; i++){
+                    toRepopulate.push_back(node->creatureType);
+                }
+                node->currentPopulation += delta;
             }
-            node->currentPopulation += delta;
         }
     }
+    
     return toRepopulate;
 }
 
+void Level_1::setupWavePattern() {
+    m_maxWaves = 4;
+    m_timeBetweenWaves = 10.0f;
+}
+
+std::vector<AquariumCreatureType> Level_1::getWaveCreatures(int waveNumber) {
+    std::vector<AquariumCreatureType> waveCreatures;
+    
+    switch(waveNumber) {
+        case 0: 
+            for(int i = 0; i < 4; i++) {
+                waveCreatures.push_back(AquariumCreatureType::NPCreature);
+            }
+            waveCreatures.push_back(AquariumCreatureType::BiggerFish);
+            break;
+        case 1: 
+            for(int i = 0; i < 3; i++) {
+                waveCreatures.push_back(AquariumCreatureType::NPCreature);
+            }
+            for(int i = 0; i < 2; i++) {
+                waveCreatures.push_back(AquariumCreatureType::BiggerFish);
+            }
+            break;
+        case 2: 
+            for(int i = 0; i < 2; i++) {
+                waveCreatures.push_back(AquariumCreatureType::NPCreature);
+            }
+            for(int i = 0; i < 3; i++) {
+                waveCreatures.push_back(AquariumCreatureType::BiggerFish);
+            }
+            waveCreatures.push_back(AquariumCreatureType::GyaradosFish);
+            break;
+        case 3: 
+            for(int i = 0; i < 2; i++) {
+                waveCreatures.push_back(AquariumCreatureType::BiggerFish);
+            }
+            for(int i = 0; i < 2; i++) {
+                waveCreatures.push_back(AquariumCreatureType::GyaradosFish);
+            }
+            break;
+    }
+    
+    return waveCreatures;
+}
+
+std::string Level_1::getLevelDescription() const {
+    return "Nivel 2: Arrecife de Coral - Aparecen Gyarados!";
+}
+
+
+
 std::vector<AquariumCreatureType> Level_2::Repopulate() {
     std::vector<AquariumCreatureType> toRepopulate;
-    for(std::shared_ptr<AquariumLevelPopulationNode> node : this->m_levelPopulation){
-        int delta = node->population - node->currentPopulation;
-        if(delta >0){
-            for(int i=0; i<delta; i++){
-                toRepopulate.push_back(node->creatureType);
+    
+    if (m_currentWave >= m_maxWaves) {
+        for(std::shared_ptr<AquariumLevelPopulationNode> node : m_levelPopulation){
+            int delta = node->population - node->currentPopulation;
+            if(delta > 0){
+                for(int i = 0; i < delta; i++){
+                    toRepopulate.push_back(node->creatureType);
+                }
+                node->currentPopulation += delta;
             }
-            node->currentPopulation += delta;
         }
     }
+    
     return toRepopulate;
+}
+
+void Level_2::setupWavePattern() {
+    m_maxWaves = 5;
+    m_timeBetweenWaves = 8.0f;
+}
+
+std::vector<AquariumCreatureType> Level_2::getWaveCreatures(int waveNumber) {
+    std::vector<AquariumCreatureType> waveCreatures;
+    
+    switch(waveNumber) {
+        case 0: 
+            for(int i = 0; i < 3; i++) {
+                waveCreatures.push_back(AquariumCreatureType::NPCreature);
+            }
+            waveCreatures.push_back(AquariumCreatureType::BiggerFish);
+            waveCreatures.push_back(AquariumCreatureType::AnglerFish);
+            break;
+        case 1: 
+            for(int i = 0; i < 2; i++) {
+                waveCreatures.push_back(AquariumCreatureType::NPCreature);
+            }
+            for(int i = 0; i < 2; i++) {
+                waveCreatures.push_back(AquariumCreatureType::BiggerFish);
+            }
+            waveCreatures.push_back(AquariumCreatureType::GyaradosFish);
+            break;
+        case 2: 
+            waveCreatures.push_back(AquariumCreatureType::NPCreature);
+            for(int i = 0; i < 2; i++) {
+                waveCreatures.push_back(AquariumCreatureType::BiggerFish);
+            }
+            for(int i = 0; i < 2; i++) {
+                waveCreatures.push_back(AquariumCreatureType::AnglerFish);
+            }
+            break;
+        case 3: 
+            for(int i = 0; i < 2; i++) {
+                waveCreatures.push_back(AquariumCreatureType::BiggerFish);
+            }
+            for(int i = 0; i < 2; i++) {
+                waveCreatures.push_back(AquariumCreatureType::GyaradosFish);
+            }
+            for(int i = 0; i < 2; i++) {
+                waveCreatures.push_back(AquariumCreatureType::AnglerFish);
+            }
+            break;
+        case 4: 
+            for(int i = 0; i < 3; i++) {
+                waveCreatures.push_back(AquariumCreatureType::GyaradosFish);
+            }
+            for(int i = 0; i < 3; i++) {
+                waveCreatures.push_back(AquariumCreatureType::AnglerFish);
+            }
+            break;
+    }
+    
+    return waveCreatures;
+}
+
+std::string Level_2::getLevelDescription() const {
+    return "Nivel 3: Oceano Profundo - Peligros y Maravillas!";
 }

@@ -35,6 +35,23 @@ void ofApp::setup(){
     player->setDirection(0, 0); // Initially stationary
     player->setBounds(ofGetWindowWidth() - 20, ofGetWindowHeight() - 20);
 
+    
+    myAquarium->addAquariumLevel(std::make_shared<Level_0>(1, 30));  
+    myAquarium->addAquariumLevel(std::make_shared<Level_1>(2, 80));   
+    myAquarium->addAquariumLevel(std::make_shared<Level_2>(3, 150)); 
+    
+    
+    if(!myAquarium->m_aquariumlevels.empty()) {
+        myAquarium->m_aquariumlevels[0]->initialize();
+    }
+    
+    
+    myAquarium->Repopulate(); 
+
+    
+    ofLogNotice() << "Sistema de niveles progresivos inicializado!";
+    ofLogNotice() << "Nivel 1: " << myAquarium->m_aquariumlevels[0]->getLevelDescription();
+
 
     myAquarium->addAquariumLevel(std::make_shared<Level_0>(0, 10));
     myAquarium->addAquariumLevel(std::make_shared<Level_1>(1, 15));
