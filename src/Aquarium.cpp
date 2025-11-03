@@ -265,7 +265,6 @@ void Aquarium::update(std::shared_ptr<PlayerCreature> player) {
         creature->move();
         }
     }
-    this->Repopulate();
 }
 
 void Aquarium::draw() const {
@@ -278,8 +277,8 @@ void Aquarium::draw() const {
 void Aquarium::removeCreature(std::shared_ptr<Creature> creature) {
     auto it = std::find(m_creatures.begin(), m_creatures.end(), creature);
     if (it != m_creatures.end()) {
-        if(creature->getType()==AquariumCreatureType::NPCreature ||
-            creature->getType() == AquariumCreatureType::BiggerFish){
+        if(creature->getType()!=AquariumCreatureType::PowerUp &&
+            creature->getType() != AquariumCreatureType::SpeedFruit){
         ofLogVerbose() << "removing creature " << endl;
         int selectLvl = this->currentLevel % this->m_aquariumlevels.size();
         this->m_aquariumlevels.at(selectLvl)->ConsumePopulation(creature->getType(), creature->getValue());
@@ -339,21 +338,29 @@ void Aquarium::SpawnCreature(AquariumCreatureType type) {
 // which will mean incrementing the buffer and pointing to a new lvl index
 // En Aquarium.cpp - ACTUALIZA el método Repopulate:
 
-void Aquarium::Repopulate() {
+void Aquarium::Repopulate(std::shared_ptr<PlayerCreature> player) {
     ofLogVerbose("entering phase repopulation");
     
     int selectedLevelIdx = this->currentLevel % this->m_aquariumlevels.size();
     ofLogVerbose() << "the current index: " << selectedLevelIdx << endl;
     std::shared_ptr<AquariumLevel> level = this->m_aquariumlevels.at(selectedLevelIdx);
 
-    
-    level->update(1.0f/60.0f, this->m_player); 
+    int previousWave=level->getCurrentWave();
+    level->update(1.0f/60.0f,player); 
 
     
-    if(level->getCurrentWave() < level->getMaxWaves() && 
-       level->m_waveTimer >= level->m_timeBetweenWaves) {
-        level->spawnWave(shared_from_this()); 
+    if (level->getCurrentWave() > previousWave && level->getCurrentWave() < level->getMaxWaves()) {
+    ofLogNotice() << "Nueva wave: " << level->getCurrentWave();
+    level->spawnWave(shared_from_this());
+    return;
+    } 
+    if (level->getCurrentWave() >=level->getMaxWaves() -1) {
+    if (level->getWaveTimer() >= level->getTimeBetweenWaves() *2.0f) {
+        level->forceFinishLevel();
+        return;
     }
+}
+
 
     if(level->isCompleted()){
         ofLogNotice() << "Level " << selectedLevelIdx << " completed! Moving to next level.";
@@ -364,7 +371,7 @@ void Aquarium::Repopulate() {
         level->initialize(); 
         this->clearCreatures();
         
-        
+        level->spawnWave(shared_from_this());
         ofLogNotice() << level->getLevelDescription();
     }
 
@@ -375,6 +382,7 @@ void Aquarium::Repopulate() {
     for(AquariumCreatureType newCreatureType : toRespawn){
         this->SpawnCreature(newCreatureType);
     }
+    
 }
 
 
@@ -451,6 +459,7 @@ void AquariumGameScene::Update(){
             }
         }
         this->m_aquarium->update(this->m_player);
+        this->m_aquarium->Repopulate(this->m_player);
     }
 
 }
@@ -467,26 +476,27 @@ void AquariumGameScene::Draw() {
 
 void AquariumGameScene::paintAquariumHUD(){
     float panelWidth = ofGetWindowWidth() - 150;
-    ofDrawBitmapString("Score: " + std::to_string(this->m_player->getScore()), panelWidth, 20);
-    ofDrawBitmapString("Power: " + std::to_string(this->m_player->getPower()), panelWidth, 30);
-    ofDrawBitmapString("Lives: " + std::to_string(this->m_player->getLives()), panelWidth, 40);
+    ofDrawBitmapString("Score: " + std::to_string(m_player->getScore()), panelWidth, 20);
+    ofDrawBitmapString("Power: " + std::to_string(m_player->getPower()), panelWidth, 30);
+    ofDrawBitmapString("Lives: " + std::to_string(m_player->getLives()), panelWidth, 40);
     
-    
-    if(!this->m_aquarium->m_aquariumlevels.empty()) {
-        int currentLevelIdx = this->m_aquarium->currentLevel % this->m_aquarium->m_aquariumlevels.size();
-        auto currentLevel = this->m_aquarium->m_aquariumlevels.at(currentLevelIdx);
+    auto aquarium=m_aquarium;
+
+        int levelCount =aquarium->getLevelCount();
+        int currentLevelIdx =aquarium->getCurrentLevelIndex();
+        if(levelCount>0){
+            auto level =aquarium->getLevel(currentLevelIdx);
+        ofDrawBitmapString("Level: " + std::to_string(currentLevelIdx + 1), panelWidth, 60);
+        ofDrawBitmapString("Wave: " + std::to_string(level->getCurrentWave() + 1) + 
+                          "/" + std::to_string(level->getMaxWaves()), panelWidth, 70);
+        ofDrawBitmapString("Level Score: " + std::to_string(level->getLevelScore()) + 
+                          "/" + std::to_string(level->getTargetScore()), panelWidth, 80);
         
-        ofDrawBitmapString("Level: " + std::to_string(this->m_aquarium->currentLevel + 1), panelWidth, 60);
-        ofDrawBitmapString("Wave: " + std::to_string(currentLevel->getCurrentWave() + 1) + 
-                          "/" + std::to_string(currentLevel->getMaxWaves()), panelWidth, 70);
-        ofDrawBitmapString("Level Score: " + std::to_string(currentLevel->m_level_score) + 
-                          "/" + std::to_string(currentLevel->m_targetScore), panelWidth, 80);
         
-        
-        ofDrawBitmapString(currentLevel->getLevelDescription(), 20, ofGetWindowHeight() - 20);
+        ofDrawBitmapString(level->getLevelDescription(), 20, ofGetWindowHeight() - 20);
     }
     
-    for (int i = 0; i < this->m_player->getLives(); ++i) {
+    for (int i = 0; i <m_player->getLives(); ++i) {
         ofSetColor(ofColor::red);
         ofDrawCircle(panelWidth + i * 20, 50, 5);
     }
@@ -509,8 +519,10 @@ void AquariumLevel::update(float deltaTime, std::shared_ptr<PlayerCreature> play
     m_waveTimer += deltaTime;
 
     
-    if (m_currentWave < m_maxWaves && m_waveTimer >= m_timeBetweenWaves) {
-        
+    if (m_currentWave +1< m_maxWaves && m_waveTimer >= m_timeBetweenWaves) {
+        ofLogNotice() << "[Wave Change] Jumping from wave " << m_currentWave
+                  << " to wave " << (m_currentWave + 1);
+
         m_waveTimer = 0.0f;
         m_currentWave++;
     }
@@ -543,6 +555,7 @@ void AquariumLevel::ConsumePopulation(AquariumCreatureType creatureType, int pow
             ofLogVerbose() << "-cosuming from type: " << AquariumCreatureTypeToString(node->creatureType) <<" , currPop: " << node->currentPopulation << endl;
             if(node->currentPopulation > 0){
                 node->currentPopulation -= 1;
+            }
                 m_level_score += power;
                 
 
@@ -556,7 +569,7 @@ void AquariumLevel::ConsumePopulation(AquariumCreatureType creatureType, int pow
             return;
         }
     }
-}   
+   
 
 
 bool AquariumLevel::isCompleted(){
@@ -586,7 +599,7 @@ std::vector<AquariumCreatureType> Level_0::Repopulate() {
 
 void Level_0::setupWavePattern() {
     m_maxWaves = 3;
-    m_timeBetweenWaves = 12.0f;
+    m_timeBetweenWaves = 4.0f;
 }
 
 std::vector<AquariumCreatureType> Level_0::getWaveCreatures(int waveNumber) {
@@ -607,8 +620,9 @@ std::vector<AquariumCreatureType> Level_0::getWaveCreatures(int waveNumber) {
             for(int i = 0; i < 4; i++) {
                 waveCreatures.push_back(AquariumCreatureType::NPCreature);
             }
-            waveCreatures.push_back(AquariumCreatureType::BiggerFish);
-            break;
+
+        waveCreatures.push_back(AquariumCreatureType::AnglerFish);
+    break;
     }
     
     return waveCreatures;
@@ -640,7 +654,7 @@ std::vector<AquariumCreatureType> Level_1::Repopulate() {
 
 void Level_1::setupWavePattern() {
     m_maxWaves = 4;
-    m_timeBetweenWaves = 10.0f;
+    m_timeBetweenWaves = 4.0f;
 }
 
 std::vector<AquariumCreatureType> Level_1::getWaveCreatures(int waveNumber) {
@@ -709,7 +723,7 @@ std::vector<AquariumCreatureType> Level_2::Repopulate() {
 
 void Level_2::setupWavePattern() {
     m_maxWaves = 5;
-    m_timeBetweenWaves = 8.0f;
+    m_timeBetweenWaves = 4.0f;
 }
 
 std::vector<AquariumCreatureType> Level_2::getWaveCreatures(int waveNumber) {
@@ -767,4 +781,16 @@ std::vector<AquariumCreatureType> Level_2::getWaveCreatures(int waveNumber) {
 
 std::string Level_2::getLevelDescription() const {
     return "Nivel 3: Oceano Profundo - Peligros y Maravillas!";
+}
+void Level_0::spawnWave(std::shared_ptr<Aquarium> aquarium){
+     ofLogNotice() << "[Spawner] Level 0 spawneando wave " << m_currentWave;
+    AquariumLevel::spawnWave(aquarium);
+}
+
+void Level_1::spawnWave(std::shared_ptr<Aquarium> aquarium){
+    AquariumLevel::spawnWave(aquarium);
+}
+
+void Level_2::spawnWave(std::shared_ptr<Aquarium> aquarium){
+    AquariumLevel::spawnWave(aquarium);
 }

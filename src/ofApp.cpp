@@ -41,22 +41,21 @@ void ofApp::setup(){
     myAquarium->addAquariumLevel(std::make_shared<Level_2>(3, 150)); 
     
     
-    if(!myAquarium->m_aquariumlevels.empty()) {
-        myAquarium->m_aquariumlevels[0]->initialize();
+    if(myAquarium->getLevelCount()>0) {
+        myAquarium->getLevel(0)->initialize();
+        myAquarium->getLevel(0)->spawnWave(myAquarium);
+
     }
     
     
-    myAquarium->Repopulate(); 
+    myAquarium->Repopulate(player); 
 
     
     ofLogNotice() << "Sistema de niveles progresivos inicializado!";
-    ofLogNotice() << "Nivel 1: " << myAquarium->m_aquariumlevels[0]->getLevelDescription();
+    ofLogNotice() << "Nivel 1: " << myAquarium->getLevel(0)->getLevelDescription();
 
 
-    myAquarium->addAquariumLevel(std::make_shared<Level_0>(0, 10));
-    myAquarium->addAquariumLevel(std::make_shared<Level_1>(1, 15));
-    myAquarium->addAquariumLevel(std::make_shared<Level_2>(2, 20));
-    myAquarium->Repopulate(); // initial population
+
 
     // now that we are mostly set, lets pass the player and the aquarium downstream
     gameManager->AddScene(std::make_shared<AquariumGameScene>(
