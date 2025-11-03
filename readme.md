@@ -25,7 +25,7 @@ Grading
 | Student Number | Student Name | Student Email |
 |-|-|-|
 |(802-23-1304)| (Omar A. Ayala Santiago)| (omar.ayala5@upr.edu) |
-|(STUDENT NUMBER HERE)| (STUDENT NAME HERE)| (STUDENT EMAIL HERE) |
+|(STUDENT NUMBER HERE)| (Eduardo R. Rodriguez Avino)| (eduardo.rodriguez59@upr.edu) |
 
 ---
 
