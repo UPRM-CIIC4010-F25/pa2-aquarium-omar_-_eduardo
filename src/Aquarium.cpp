@@ -355,15 +355,16 @@ void Aquarium::Repopulate(std::shared_ptr<PlayerCreature> player) {
     return;
     } 
     if (level->getCurrentWave() >=level->getMaxWaves() -1) {
-    if (level->getWaveTimer() >= level->getTimeBetweenWaves() *2.0f) {
-        level->forceFinishLevel();
-        return;
-    }
-}
+        if (level->getWaveTimer() >= level->getTimeBetweenWaves() *2.0f) {
+            level->forceFinishLevel();
 
+            // return;
+        }
+    }
 
     if(level->isCompleted()){
         ofLogNotice() << "Level " << selectedLevelIdx << " completed! Moving to next level.";
+        cout << "Level is complete!" << endl;
         level->levelReset();
         this->currentLevel += 1;
         selectedLevelIdx = this->currentLevel % this->m_aquariumlevels.size();
@@ -572,8 +573,9 @@ void AquariumLevel::ConsumePopulation(AquariumCreatureType creatureType, int pow
    
 
 
-bool AquariumLevel::isCompleted(){
-    return m_levelCompleted || m_level_score >= m_targetScore;
+bool AquariumLevel::isCompleted() {
+   return m_levelCompleted || m_level_score >= m_targetScore;
+//    return this-> m_level_score >=this-> m_targetScore;
 }
 
 
@@ -599,7 +601,7 @@ std::vector<AquariumCreatureType> Level_0::Repopulate() {
 
 void Level_0::setupWavePattern() {
     m_maxWaves = 3;
-    m_timeBetweenWaves = 4.0f;
+    m_timeBetweenWaves = 2.0f;
 }
 
 std::vector<AquariumCreatureType> Level_0::getWaveCreatures(int waveNumber) {
@@ -654,7 +656,7 @@ std::vector<AquariumCreatureType> Level_1::Repopulate() {
 
 void Level_1::setupWavePattern() {
     m_maxWaves = 4;
-    m_timeBetweenWaves = 4.0f;
+    m_timeBetweenWaves = 2.0f;
 }
 
 std::vector<AquariumCreatureType> Level_1::getWaveCreatures(int waveNumber) {
@@ -723,7 +725,7 @@ std::vector<AquariumCreatureType> Level_2::Repopulate() {
 
 void Level_2::setupWavePattern() {
     m_maxWaves = 5;
-    m_timeBetweenWaves = 4.0f;
+    m_timeBetweenWaves = 2.0f;
 }
 
 std::vector<AquariumCreatureType> Level_2::getWaveCreatures(int waveNumber) {

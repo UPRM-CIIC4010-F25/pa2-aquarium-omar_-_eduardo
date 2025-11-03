@@ -34,6 +34,20 @@ class AquariumLevelPopulationNode{
 class Aquarium;
 class AquariumLevel;
 class AquariumLevel : public GameLevel {
+    
+
+    protected:
+        std::vector<std::shared_ptr<AquariumLevelPopulationNode>> m_levelPopulation;
+        int m_level_score;
+        int m_targetScore;
+        int m_currentWave;
+        int m_maxWaves;
+        float m_timeBetweenWaves;
+        float m_waveTimer;
+        bool m_levelCompleted;
+        virtual void setupWavePattern() = 0;
+        virtual std::vector<AquariumCreatureType> getWaveCreatures(int waveNumber) = 0;
+    
     public:
         AquariumLevel(int levelNumber, int targetScore)
         : GameLevel(levelNumber), m_level_score(0), m_targetScore(targetScore){};
@@ -59,20 +73,8 @@ class AquariumLevel : public GameLevel {
             ofLogNotice() << "Nueva wave -> " << m_currentWave;
         }
         void forceFinishLevel() {
-        m_levelCompleted = true;
+            m_levelCompleted = true;
         }
-
-    protected:
-        std::vector<std::shared_ptr<AquariumLevelPopulationNode>> m_levelPopulation;
-        int m_level_score;
-        int m_targetScore;
-        int m_currentWave;
-        int m_maxWaves;
-        float m_timeBetweenWaves;
-        float m_waveTimer;
-        bool m_levelCompleted;
-        virtual void setupWavePattern() = 0;
-        virtual std::vector<AquariumCreatureType> getWaveCreatures(int waveNumber) = 0;
 
 };
 
