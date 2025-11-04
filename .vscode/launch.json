@@ -1,6 +1,7 @@
 {
     "version": "0.2.0",
     "configurations": [
+        
         {
             "name": "C++ Launch",
             "type": "cppdbg",
@@ -35,7 +36,7 @@
                         "ignoreFailures": true
                     }
                 ],
-                "program": "${workspaceRoot}/bin/${workspaceFolderBasename}_debug"
+                "program": "${workspaceRoot}/bin/${workspaceFolderBasename}.exe"
             }
         },
         {
