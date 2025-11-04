@@ -55,7 +55,7 @@ class AquariumLevel : public GameLevel {
         bool isCompleted() override;
         void populationReset();
         void levelReset(){m_level_score=0;this->populationReset();}
-        virtual std::vector<AquariumCreatureType> Repopulate() = 0;
+        virtual std::vector<AquariumCreatureType> Repopulate();
         virtual void initialize();
         virtual void update(float deltaTime, std::shared_ptr<PlayerCreature> player);
         virtual void spawnWave(std::shared_ptr<Aquarium> aquarium);
@@ -281,7 +281,6 @@ class Level_0 : public AquariumLevel  {
             this->m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::AnglerFish, 4));
         }
 
-        std::vector<AquariumCreatureType> Repopulate() override;
 
         void spawnWave(std::shared_ptr<Aquarium> aquarium) override;
         void setupWavePattern() override;
@@ -296,9 +295,7 @@ class Level_1 : public AquariumLevel  {
             this->m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::BiggerFish, 5));
             this->m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::AnglerFish, 3));
         }
-    
-        
-        std::vector<AquariumCreatureType> Repopulate() override;
+
 
         void spawnWave(std::shared_ptr<Aquarium> aquarium) override;
         void setupWavePattern() override;
@@ -315,7 +312,6 @@ class Level_2 : public AquariumLevel  {
             this->m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::AnglerFish, 6));
         }
 
-        std::vector<AquariumCreatureType> Repopulate() override;
 
         void spawnWave(std::shared_ptr<Aquarium> aquarium) override;
         void setupWavePattern() override;

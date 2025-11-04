@@ -445,7 +445,7 @@ void AquariumGameScene::Update(){
                          this->m_aquarium->SpawnCreature(AquariumCreatureType::SpeedFruit);
                             ofLogNotice() << "A Light-Speed Devil Fruit appeared!";
     }
-                        if (this->m_player->getScore() % 30 == 0 && this->m_player->getScore() > 0) {
+                        if (this->m_player->getScore() % 10 == 0 && this->m_player->getScore() > 0) {
                             this->m_player->increasePower(1);
            
                     ofLogNotice() << "Player grew stronger! New Power: " << this->m_player->getPower() << endl;
@@ -542,6 +542,24 @@ void AquariumLevel::spawnWave(std::shared_ptr<Aquarium> aquarium) {
         aquarium->SpawnCreature(creatureType);
     }
 }
+std::vector<AquariumCreatureType> AquariumLevel::Repopulate() {
+    std::vector<AquariumCreatureType> toRepopulate;
+
+    if (m_currentWave >= m_maxWaves) {
+        for (auto& node : m_levelPopulation) {
+            int counter1 = node->population - node->currentPopulation;
+            if (counter1 > 0) {
+                for (int i = 0; i < counter1; i++) {
+                    toRepopulate.push_back(node->creatureType);
+                }
+                node->currentPopulation += counter1;
+            }
+        }
+    }
+    return toRepopulate;
+}
+
+
 
 void AquariumLevel::populationReset(){
     for(auto node: this->m_levelPopulation){
@@ -582,23 +600,6 @@ bool AquariumLevel::isCompleted() {
 
 
 
-std::vector<AquariumCreatureType> Level_0::Repopulate() {
-    std::vector<AquariumCreatureType> toRepopulate;
-    if (m_currentWave >= m_maxWaves) {
-        for(std::shared_ptr<AquariumLevelPopulationNode> node : m_levelPopulation){
-            int delta = node->population - node->currentPopulation;
-            if(delta > 0){
-                for(int i = 0; i < delta; i++){
-                    toRepopulate.push_back(node->creatureType);
-                }
-                node->currentPopulation += delta;
-            }
-        }
-    }
-    
-    return toRepopulate;
-}
-
 void Level_0::setupWavePattern() {
     m_maxWaves = 3;
     m_timeBetweenWaves = 2.0f;
@@ -634,25 +635,6 @@ std::string Level_0::getLevelDescription() const {
     return "Nivel 1: Ecosistema Basico - Peces Dorados Pacificos";
 }
 
-
-
-std::vector<AquariumCreatureType> Level_1::Repopulate() {
-    std::vector<AquariumCreatureType> toRepopulate;
-    
-    if (m_currentWave >= m_maxWaves) {
-        for(std::shared_ptr<AquariumLevelPopulationNode> node : m_levelPopulation){
-            int delta = node->population - node->currentPopulation;
-            if(delta > 0){
-                for(int i = 0; i < delta; i++){
-                    toRepopulate.push_back(node->creatureType);
-                }
-                node->currentPopulation += delta;
-            }
-        }
-    }
-    
-    return toRepopulate;
-}
 
 void Level_1::setupWavePattern() {
     m_maxWaves = 4;
@@ -704,24 +686,6 @@ std::string Level_1::getLevelDescription() const {
 }
 
 
-
-std::vector<AquariumCreatureType> Level_2::Repopulate() {
-    std::vector<AquariumCreatureType> toRepopulate;
-    
-    if (m_currentWave >= m_maxWaves) {
-        for(std::shared_ptr<AquariumLevelPopulationNode> node : m_levelPopulation){
-            int delta = node->population - node->currentPopulation;
-            if(delta > 0){
-                for(int i = 0; i < delta; i++){
-                    toRepopulate.push_back(node->creatureType);
-                }
-                node->currentPopulation += delta;
-            }
-        }
-    }
-    
-    return toRepopulate;
-}
 
 void Level_2::setupWavePattern() {
     m_maxWaves = 5;
