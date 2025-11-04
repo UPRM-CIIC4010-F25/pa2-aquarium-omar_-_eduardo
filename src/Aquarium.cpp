@@ -600,75 +600,32 @@ std::vector<AquariumCreatureType> AquariumLevel::Repopulate() {
 }
 
 <<<<<<< HEAD
-void AquariumLevel::addBasePopulation() {
-    m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::NPCreature, 14));
-    m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::AnglerFish, 4));
-=======
+
+
+
+
+std::vector<AquariumCreatureType> Level_0::Repopulate() {
+    std::vector<AquariumCreatureType> toRepopulate;
+    if (m_currentWave >= m_maxWaves) {
+        for(std::shared_ptr<AquariumLevelPopulationNode> node : m_levelPopulation){
+            int delta = node->population - node->currentPopulation;
+            if(delta > 0){
+                for(int i = 0; i < delta; i++){
+                    toRepopulate.push_back(node->creatureType);
+                }
+                node->currentPopulation += delta;
+            }
+        }
+    }
+    
+    return toRepopulate;
+}
+
+
 void Level_0::setupWavePattern() {
     m_maxWaves = 3;
-    m_timeBetweenWaves = 2.0f;
->>>>>>> 348aade7a480641845a5ba4daab620eb582c42f5
+    m_timeBetweenWaves = 4.0f;
 }
-
-void AquariumLevel::addIntermediatePopulation() {
-    m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::NPCreature, 9));
-    m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::BiggerFish, 5));
-    m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::AnglerFish, 3));
-}
-
-void AquariumLevel::addAdvancedPopulation() {
-    m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::NPCreature, 6));
-    m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::BiggerFish, 8));
-    m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::GyaradosFish, 6));
-    m_levelPopulation.push_back(std::make_shared<AquariumLevelPopulationNode>(AquariumCreatureType::AnglerFish, 6));
-}
-
-void AquariumLevel::setupBasicWavePattern(int maxWaves, float timeBetweenWaves) {
-    m_maxWaves = maxWaves;
-    m_timeBetweenWaves = timeBetweenWaves;
-}
-
-void AquariumLevel::setupIntermediateWavePattern(int maxWaves, float timeBetweenWaves) {
-    m_maxWaves = maxWaves;
-    m_timeBetweenWaves = timeBetweenWaves;
-}
-
-void AquariumLevel::setupAdvancedWavePattern(int maxWaves, float timeBetweenWaves) {
-    m_maxWaves = maxWaves;
-    m_timeBetweenWaves = timeBetweenWaves;
-}
-
-
-
-// std::vector<AquariumCreatureType> Level_0::Repopulate() {
-//     std::vector<AquariumCreatureType> toRepopulate;
-//     if (m_currentWave >= m_maxWaves) {
-//         for(std::shared_ptr<AquariumLevelPopulationNode> node : m_levelPopulation){
-//             int delta = node->population - node->currentPopulation;
-//             if(delta > 0){
-//                 for(int i = 0; i < delta; i++){
-//                     toRepopulate.push_back(node->creatureType);
-//                 }
-//                 node->currentPopulation += delta;
-//             }
-//         }
-//     }
-    
-//     return toRepopulate;
-// }
-void Level_0::setupLevelPopulation() {
-    addBasePopulation();
-}
-
-void Level_0::setupWavePattern() {
-    
-    setupBasicWavePattern(3, 2.0f);
-}
-
-// void Level_0::setupWavePattern() {
-//     m_maxWaves = 3;
-//     m_timeBetweenWaves = 4.0f;
-// }
 
 std::vector<AquariumCreatureType> Level_0::getWaveCreatures(int waveNumber) {
     std::vector<AquariumCreatureType> waveCreatures;
@@ -705,40 +662,29 @@ void Level_0::spawnWave(std::shared_ptr<Aquarium> aquarium){
     AquariumLevel::spawnWave(aquarium);
 }
 
-// std::vector<AquariumCreatureType> Level_1::Repopulate() {
-//     std::vector<AquariumCreatureType> toRepopulate;
+std::vector<AquariumCreatureType> Level_1::Repopulate() {
+    std::vector<AquariumCreatureType> toRepopulate;
     
-//     if (m_currentWave >= m_maxWaves) {
-//         for(std::shared_ptr<AquariumLevelPopulationNode> node : m_levelPopulation){
-//             int delta = node->population - node->currentPopulation;
-//             if(delta > 0){
-//                 for(int i = 0; i < delta; i++){
-//                     toRepopulate.push_back(node->creatureType);
-//                 }
-//                 node->currentPopulation += delta;
-//             }
-//         }
-//     }
+    if (m_currentWave >= m_maxWaves) {
+        for(std::shared_ptr<AquariumLevelPopulationNode> node : m_levelPopulation){
+            int delta = node->population - node->currentPopulation;
+            if(delta > 0){
+                for(int i = 0; i < delta; i++){
+                    toRepopulate.push_back(node->creatureType);
+                }
+                node->currentPopulation += delta;
+            }
+        }
+    }
     
-//     return toRepopulate;
-// }
-
-// void Level_1::setupWavePattern() {
-//     m_maxWaves = 4;
-//     m_timeBetweenWaves = 4.0f;
-// }
-void Level_1::setupLevelPopulation() {
-    addIntermediatePopulation();
+    return toRepopulate;
 }
 
 void Level_1::setupWavePattern() {
-<<<<<<< HEAD
-    setupIntermediateWavePattern(4, 2.0f);
-=======
     m_maxWaves = 4;
-    m_timeBetweenWaves = 2.0f;
->>>>>>> 348aade7a480641845a5ba4daab620eb582c42f5
+    m_timeBetweenWaves = 4.0f;
 }
+
 
 std::vector<AquariumCreatureType> Level_1::getWaveCreatures(int waveNumber) {
     std::vector<AquariumCreatureType> waveCreatures;
@@ -786,40 +732,29 @@ std::string Level_1::getLevelDescription() const {
 
 
 
-// std::vector<AquariumCreatureType> Level_2::Repopulate() {
-//     std::vector<AquariumCreatureType> toRepopulate;
+std::vector<AquariumCreatureType> Level_2::Repopulate() {
+    std::vector<AquariumCreatureType> toRepopulate;
     
-//     if (m_currentWave >= m_maxWaves) {
-//         for(std::shared_ptr<AquariumLevelPopulationNode> node : m_levelPopulation){
-//             int delta = node->population - node->currentPopulation;
-//             if(delta > 0){
-//                 for(int i = 0; i < delta; i++){
-//                     toRepopulate.push_back(node->creatureType);
-//                 }
-//                 node->currentPopulation += delta;
-//             }
-//         }
-//     }
+    if (m_currentWave >= m_maxWaves) {
+        for(std::shared_ptr<AquariumLevelPopulationNode> node : m_levelPopulation){
+            int delta = node->population - node->currentPopulation;
+            if(delta > 0){
+                for(int i = 0; i < delta; i++){
+                    toRepopulate.push_back(node->creatureType);
+                }
+                node->currentPopulation += delta;
+            }
+        }
+    }
     
-//     return toRepopulate;
-// }
-
-// void Level_2::setupWavePattern() {
-//     m_maxWaves = 5;
-//     m_timeBetweenWaves = 4.0f;
-// }
-void Level_2::setupLevelPopulation() {
-    addAdvancedPopulation();
+    return toRepopulate;
 }
 
 void Level_2::setupWavePattern() {
-<<<<<<< HEAD
-    setupAdvancedWavePattern(5, 2.0f);
-=======
     m_maxWaves = 5;
-    m_timeBetweenWaves = 2.0f;
->>>>>>> 348aade7a480641845a5ba4daab620eb582c42f5
+    m_timeBetweenWaves = 4.0f;
 }
+
 
 std::vector<AquariumCreatureType> Level_2::getWaveCreatures(int waveNumber) {
     std::vector<AquariumCreatureType> waveCreatures;
