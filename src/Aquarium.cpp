@@ -128,6 +128,8 @@ NPCreature::NPCreature(float x, float y, int speed, std::shared_ptr<GameSprite> 
     normalize();
 
     m_type = AquariumCreatureType::NPCreature;
+    m_value=2;
+    m_powerRequired=1;
 }
 
 void NPCreature::move() {
@@ -159,6 +161,7 @@ BiggerFish::BiggerFish(float x, float y, int speed, std::shared_ptr<GameSprite> 
 
     setCollisionRadius(60); // Bigger fish have a larger collision radius
     m_value = 5; // Bigger fish have a higher value
+    m_powerRequired=6;
     m_type = AquariumCreatureType::BiggerFish;
 }
 
@@ -183,6 +186,7 @@ GyaradosFish::GyaradosFish(float x, float y, int speed, std::shared_ptr<GameSpri
 : NPCreature(x, y, speed, sprite) {
     m_value = 10;
     m_type = AquariumCreatureType::GyaradosFish;
+    m_powerRequired=10;
 }
 
 void GyaradosFish::move(std::shared_ptr<PlayerCreature> player) {
@@ -214,6 +218,7 @@ AquariumSpriteManager::AquariumSpriteManager(){
     this->m_big_fish = std::make_shared<GameSprite>("bigger-fish.png", 120, 120);
     this->m_powerup= std::make_shared<GameSprite>("devil_Fruit.png", 40, 40);
     this->m_speed_fruit= std::make_shared<GameSprite>("kizaru_Fruit.png",40,40);
+    this->m_omanyte=std::make_shared<GameSprite>("omanyte.png",80,80);
     this->m_gyarados_fish=std::make_shared<GameSprite>("gyarados.png", 140, 140);
     this->m_angler_fish = std::make_shared<GameSprite>("angler_Fish.png", 90, 90);
 }
@@ -233,6 +238,8 @@ std::shared_ptr<GameSprite> AquariumSpriteManager::GetSprite(AquariumCreatureTyp
             return std::make_shared<GameSprite>(*this->m_gyarados_fish);
         case AquariumCreatureType::AnglerFish:
             return std::make_shared<GameSprite>(*this->m_angler_fish);
+        case AquariumCreatureType::Omanyte:
+            return std::make_shared<GameSprite>(*this->m_omanyte);
         default:
             return nullptr;
     }
@@ -324,6 +331,9 @@ void Aquarium::SpawnCreature(AquariumCreatureType type) {
         case AquariumCreatureType::AnglerFish:
             this->addCreature(std::make_shared<AnglerFish>(x, y, speed, this->m_sprite_manager->GetSprite(AquariumCreatureType::AnglerFish)));
              break;
+        case AquariumCreatureType::Omanyte:
+            this->addCreature(std::make_shared<AnglerFish>(x, y, speed, this->m_sprite_manager->GetSprite(AquariumCreatureType::Omanyte)));
+             break;
         default:
             ofLogError() << "Unknown creature type to spawn!";
             break;
@@ -371,7 +381,7 @@ void Aquarium::Repopulate(std::shared_ptr<PlayerCreature> player) {
         level = this->m_aquariumlevels.at(selectedLevelIdx);
         level->initialize(); 
         this->clearCreatures();
-        
+        this->SpawnCreature(AquariumCreatureType::Omanyte);
         level->spawnWave(shared_from_this());
         ofLogNotice() << level->getLevelDescription();
     }
@@ -420,13 +430,19 @@ void AquariumGameScene::Update(){
             m_aquarium->removeCreature(event->creatureB);
              return;
                 }
+        if (event->creatureB->getType() == AquariumCreatureType::Omanyte){
+            m_player->addLife(1);
+            m_aquarium->removeCreature(event->creatureB);
+            ofLogNotice() << "Omanyte eaten! +1 life";
+            return;
+            }
             ofLogVerbose() << "Collision detected between player and NPC!" << std::endl;
             float newDx = -m_player->getDx();
             float newDy= -m_player->getDy();
             m_player->setDirection(newDx,newDy);
             if(event->creatureB != nullptr){
                 event->print();
-                if(this->m_player->getPower() < event->creatureB->getValue()){
+                if(this->m_player->getPower() < event->creatureB->getPowerRequired()){
                     ofLogNotice() << "Player is too weak to eat the creature!" << std::endl;
                     this->m_player->loseLife(3*60); // 3 frames debounce, 3 seconds at 60fps
                     if(this->m_player->getLives() <= 0){
@@ -660,10 +676,10 @@ std::vector<AquariumCreatureType> Level_1::getWaveCreatures(int waveNumber) {
             }
             break;
         case 2: 
-            for(int i = 0; i < 2; i++) {
+            for(int i = 0; i < 5; i++) {
                 waveCreatures.push_back(AquariumCreatureType::NPCreature);
             }
-            for(int i = 0; i < 3; i++) {
+            for(int i = 0; i < 2; i++) {
                 waveCreatures.push_back(AquariumCreatureType::BiggerFish);
             }
             waveCreatures.push_back(AquariumCreatureType::GyaradosFish);

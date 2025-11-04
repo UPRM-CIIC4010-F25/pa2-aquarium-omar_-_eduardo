@@ -14,7 +14,8 @@ enum class AquariumCreatureType {
     PowerUp,
     SpeedFruit,
     GyaradosFish,
-    AnglerFish
+    AnglerFish,
+    Omanyte
 };
 
 string AquariumCreatureTypeToString(AquariumCreatureType t);
@@ -106,6 +107,15 @@ public:
     void updateSizeBoost();
     void activateSpeedFruit();
     void updateSpeedFruit();
+    void addLife(int amount = 1){
+        if (m_lives <3){
+            m_lives += amount;
+            if (m_lives >3) m_lives =3;
+            ofLogNotice() << "Player gained a life!" << endl;
+        } else{
+            ofLogNotice() << "Lives are already at the maximum!"<<endl;
+        }
+    }
     
 private:
     int m_score = 0;
@@ -130,9 +140,11 @@ public:
     AquariumCreatureType GetType() {return this->m_creatureType;}
     void move() override;
     void draw() const override;
+
+    int getValue() const{return m_value;}
+    int getPowerRequired() const {return m_powerRequired;}
 protected:
     AquariumCreatureType m_creatureType;
-
 };
 
 class BiggerFish : public NPCreature {
@@ -167,12 +179,25 @@ public:
     void move() override {}
     void draw() const override {m_sprite->draw(m_x, m_y);}
 };
+class Omanyte : public NPCreature {
+public:
+    Omanyte(float x, float y, int speed, std::shared_ptr<GameSprite> sprite)
+        : NPCreature(x, y, speed, sprite)
+    {
+        m_type = AquariumCreatureType::Omanyte;
+        setCollisionRadius(35.0f);
+    }
+    void draw() const override{
+        m_sprite->draw(m_x, m_y);
+    }
+};
 class AnglerFish : public NPCreature{
     public:
     AnglerFish(float x, float y, int speed, std::shared_ptr<GameSprite> sprite)
         : NPCreature(x, y, speed, sprite) {
-        m_value = 5;
+        m_value = 4;
         m_type = AquariumCreatureType::AnglerFish;
+        m_powerRequired=2;
     }
 
   void move(std::shared_ptr<PlayerCreature> player) {
@@ -211,6 +236,7 @@ class AquariumSpriteManager {
         std::shared_ptr<GameSprite> m_big_fish;
         std::shared_ptr<GameSprite> m_powerup;
         std::shared_ptr<GameSprite> m_speed_fruit;
+        std::shared_ptr<GameSprite> m_omanyte;
         std::shared_ptr<GameSprite> m_gyarados_fish;
         std::shared_ptr<GameSprite> m_angler_fish;
 };

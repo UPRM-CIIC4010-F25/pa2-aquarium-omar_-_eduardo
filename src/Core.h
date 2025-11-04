@@ -76,6 +76,7 @@ protected:
     float m_height = 0.0f;
     float m_collisionRadius = 0.0f;
     int m_value = 0;
+    int m_powerRequired=1;
     std::shared_ptr<GameSprite> m_sprite;
      AquariumCreatureType m_type;
 public:
@@ -105,6 +106,8 @@ public:
     void setBounds(int w, int h);
     void normalize();
     void bounce();
+    int getPowerRequired() const{return m_powerRequired;}
+    void setPowerRequired(int p) {m_powerRequired =p;}
     AquariumCreatureType getType() const {return m_type;}
 };
 

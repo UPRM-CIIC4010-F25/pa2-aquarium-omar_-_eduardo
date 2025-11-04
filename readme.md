@@ -37,3 +37,5 @@ If a partner has no commits in the repositories, they will receive a 0.
 
 # Student Notes
 If you have any bonus specs, bonus or any details the TA's should know, you should include it here:
+
+Se creo un Omanyte que aparece una vez se completa un *Nivel*(no wave). El omanyte da una vida extra en caso de haber perdido alguna y tiene una duracion de 7 segundos.
